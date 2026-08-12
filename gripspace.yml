@@ -1,0 +1,22 @@
+version: 2
+manifest:
+  url: https://github.com/synapt-dev/grip-tutorial.git
+  composefile:
+    - dest: CLAUDE.md
+      separator: "\n\n"
+      parts:
+        - gripspace: grip-tutorial
+          src: CONVENTIONS.md
+        - src: PROJECT.md
+gripspaces:
+  - url: https://github.com/synapt-dev/grip-tutorial.git
+    rev: standards
+repos:
+  api:
+    url: https://github.com/synapt-dev/grip-tutorial.git
+    path: ./api
+    revision: api
+  web:
+    url: https://github.com/synapt-dev/grip-tutorial.git
+    path: ./web
+    revision: web
