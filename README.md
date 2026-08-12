@@ -55,9 +55,22 @@ The manifest declares that `CLAUDE.md` is BUILT from two fragments: shared
 Change the shared fragment once; every workspace that composes it picks the
 change up on next `gr sync`.
 
-> ⚠ **Known limitation, honestly stated:** in gitgrip ≤ 1.0.2 the composed
-> file is not yet written on sync — the fix is in review. This section
-> activates the moment it ships; the manifest above is already correct.
+Try it: after `gr sync`, open `CLAUDE.md` — it is the two fragments joined,
+built for you. This works today on gitgrip 1.0.2.
+
+> ⚠ **One known limitation, honestly stated:** `gr sync` does not yet refresh
+> the shared-fragment clone, so an UPSTREAM edit to `CONVENTIONS.md` will not
+> flow into your workspace until the fix ships (in review). Workaround, if you
+> want to see propagation now:
+>
+> ```bash
+> git -C .gitgrip/spaces/grip-tutorial pull origin standards
+> gr sync    # CLAUDE.md now carries the upstream change
+> ```
+>
+> Initial composition needs no workaround; only the update loop does. And note
+> the manifest nests `composefile` under `manifest:` — placed at top level it
+> is silently ignored on current releases.
 
 ## What to look at next
 
