@@ -2,15 +2,39 @@ version: 2
 manifest:
   url: https://github.com/synapt-dev/grip-tutorial.git
   composefile:
+    # The root CLAUDE.md: shared conventions + this project's local notes.
     - dest: CLAUDE.md
       separator: "\n\n"
       parts:
         - gripspace: grip-tutorial
           src: CONVENTIONS.md
         - src: PROJECT.md
+    # Each repo also gets its OWN CLAUDE.md: shared conventions + that repo's
+    # branch fragment. This is what multiple gripspaces from one repo unlock.
+    - dest: api/CLAUDE.md
+      separator: "\n\n"
+      parts:
+        - gripspace: grip-tutorial
+          src: CONVENTIONS.md
+        - gripspace: grip-tutorial-api
+          src: CLAUDE_FRAG.md
+    - dest: web/CLAUDE.md
+      separator: "\n\n"
+      parts:
+        - gripspace: grip-tutorial
+          src: CONVENTIONS.md
+        - gripspace: grip-tutorial-web
+          src: CLAUDE_FRAG.md
 gripspaces:
+  # Three gripspaces, all the SAME repo at different revisions. Each
+  # materializes as its own space (grip-tutorial, grip-tutorial-api,
+  # grip-tutorial-web) — the capability that makes per-repo composition work.
   - url: https://github.com/synapt-dev/grip-tutorial.git
     rev: standards
+  - url: https://github.com/synapt-dev/grip-tutorial.git
+    rev: api
+  - url: https://github.com/synapt-dev/grip-tutorial.git
+    rev: web
 repos:
   api:
     url: https://github.com/synapt-dev/grip-tutorial.git
