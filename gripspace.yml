@@ -1,0 +1,15 @@
+version: 2
+manifest:
+  url: https://github.com/synapt-dev/grip-tutorial.git
+  composefile:
+    - dest: CLAUDE.md
+      separator: "\n\n"
+      parts:
+        - src: BASE.md
+        - repo: config
+          src: CLAUDE.md
+repos:
+  config:
+    url: https://github.com/synapt-dev/grip-tutorial.git
+    path: ./config
+    revision: config/main
