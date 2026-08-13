@@ -2,29 +2,23 @@ version: 2
 manifest:
   url: https://github.com/synapt-dev/grip-tutorial.git
   composefile:
-    - dest: api/CLAUDE.md
+    - dest: CLAUDE.md
       separator: "\n\n"
       parts:
-        - src: standards/CONVENTIONS.md
-        - src: api/CLAUDE_FRAG.md
-    - dest: web/CLAUDE.md
-      separator: "\n\n"
-      parts:
-        - src: standards/CONVENTIONS.md
-        - src: web/CLAUDE_FRAG.md
+        - src: MOBILE.md
+        - repo: android
+          src: CLAUDE.md
+        - repo: ios
+          src: CLAUDE.md
 gripspaces:
   - url: https://github.com/synapt-dev/grip-tutorial.git
-    rev: base/main
+    rev: platform/main
 repos:
-  standards:
+  android:
     url: https://github.com/synapt-dev/grip-tutorial.git
-    path: ./standards
-    revision: standards/eng
-  api:
+    path: ./android
+    revision: android/main
+  ios:
     url: https://github.com/synapt-dev/grip-tutorial.git
-    path: ./api
-    revision: api/main
-  web:
-    url: https://github.com/synapt-dev/grip-tutorial.git
-    path: ./web
-    revision: web/main
+    path: ./ios
+    revision: ios/main
