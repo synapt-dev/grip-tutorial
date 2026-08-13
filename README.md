@@ -9,7 +9,8 @@ Start here: this README walks the whole flow. A guided codelab is coming
 to synapt.dev.
 
 - `main` (this branch) is the mobile altitude — the top of the stack.
-- `gr init <this repo> --rev base/main` enters at the bottom instead.
+- To enter at the bottom instead, clone the layer branch and init from it:
+  `git clone -b base/main <this repo> loomworks-base && gr init ./loomworks-base -p loomworks-ws`
 - Working repos (config, conventions, web, api, android, ios, notes) are
   plain branches: code plus a CLAUDE.md their parent layer composes upward.
 
