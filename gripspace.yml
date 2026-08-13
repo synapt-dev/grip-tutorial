@@ -1,0 +1,24 @@
+version: 2
+manifest:
+  url: https://github.com/synapt-dev/grip-tutorial.git
+  composefile:
+    - dest: CLAUDE.md
+      separator: "\n\n"
+      parts:
+        - src: MOBILE.md
+        - repo: android
+          src: CLAUDE.md
+        - repo: ios
+          src: CLAUDE.md
+gripspaces:
+  - url: https://github.com/synapt-dev/grip-tutorial.git
+    rev: platform/main
+repos:
+  android:
+    url: https://github.com/synapt-dev/grip-tutorial.git
+    path: ./android
+    revision: android/main
+  ios:
+    url: https://github.com/synapt-dev/grip-tutorial.git
+    path: ./ios
+    revision: ios/main
