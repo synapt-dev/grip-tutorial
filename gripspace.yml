@@ -22,3 +22,7 @@ repos:
     url: https://github.com/synapt-dev/grip-tutorial.git
     path: ./ios
     revision: ios/main
+  conventions:
+    url: https://github.com/synapt-dev/grip-tutorial.git
+    path: ./conventions
+    revision: conventions/mobile
