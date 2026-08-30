@@ -8,6 +8,10 @@ layers beneath it materialize with it.
 Start here: this README walks the whole flow. The guided codelab is live at
 [synapt.dev/grip/tutorial](https://synapt.dev/grip/tutorial/).
 
+Agents can work through the same fixture as an executable contract. Start with
+`./agent-codelab/run 1`, then continue through chapter 6 only when each command
+prints `PASS` and exits 0. See [AGENTS.md](AGENTS.md) for the cold-start task.
+
 - `main` (this branch) is the mobile altitude — the top of the stack.
 - To enter at the bottom instead, clone the layer branch and init from it:
   `git clone -b base/main <this repo> loomworks-base && gr init ./loomworks-base -p loomworks-ws`
