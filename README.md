@@ -5,8 +5,8 @@ layers (base → standards → platform → mobile) and the working repos they
 declare, each living as a `<repo>/main` branch. Clone your altitude and the
 layers beneath it materialize with it.
 
-Start here: this README walks the whole flow. A guided codelab is coming
-to synapt.dev.
+Start here: this README walks the whole flow. The guided codelab is live at
+[synapt.dev/grip/tutorial](https://synapt.dev/grip/tutorial/).
 
 - `main` (this branch) is the mobile altitude — the top of the stack.
 - To enter at the bottom instead, clone the layer branch and init from it:
