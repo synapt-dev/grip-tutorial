@@ -1,0 +1,275 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+STATE="${LOOMWORKS_AGENT_LAB_DIR:-$ROOT/.agent-codelab}"
+REMOTE="https://github.com/synapt-dev/grip-tutorial.git"
+MOBILE="$STATE/mobile"
+BASE_MANIFEST="$STATE/base-manifest"
+BASE="$STATE/base"
+PLATFORM_MANIFEST="$STATE/platform-manifest"
+PLATFORM="$STATE/platform"
+MARKER="- Agent codelab marker: prefer table-driven tests."
+
+pass() {
+  chapter="$1"
+  shift
+  mkdir -p "$STATE/checkpoints"
+  printf '%s\n' "$*" > "$STATE/checkpoints/$chapter.pass"
+  printf 'PASS chapter %s: %s\n' "$chapter" "$*"
+}
+
+fail() {
+  printf 'FAIL: %s\n' "$*" >&2
+  exit 1
+}
+
+log_has_error() {
+  grep -Eq '✗|[1-9][0-9]* failed|[Ee]rror[: -]|Operation failed' "$1"
+}
+
+need_command() {
+  command -v "$1" >/dev/null 2>&1 || fail "required command not found: $1"
+}
+
+need_chapter() {
+  previous="$1"
+  [ -f "$STATE/checkpoints/$previous.pass" ] || \
+    fail "chapter $previous has not passed; run ./agent-codelab/run $previous first"
+}
+
+repo_count() {
+  workspace="$1"
+  (cd "$workspace" && gr status --json) | python3 -c \
+    'import json,sys; print(len(json.load(sys.stdin)))'
+}
+
+assert_clean_repos() {
+  workspace="$1"
+  expected="$2"
+  (cd "$workspace" && gr status --json) | python3 -c \
+    'import json,sys; expected=int(sys.argv[1]); rows=json.load(sys.stdin); assert len(rows)==expected, (len(rows), expected); dirty=[r["name"] for r in rows if not r["clean"]]; assert not dirty, dirty' \
+    "$expected" || fail "$workspace must contain $expected clean child repos"
+}
+
+run_checked() {
+  label="$1"
+  shift
+  mkdir -p "$STATE/logs"
+  log="$STATE/logs/$label.log"
+  set +e
+  "$@" 2>&1 | tee "$log"
+  statuses=("${PIPESTATUS[@]}")
+  set -e
+  [ "${statuses[0]}" = 0 ] || fail "$label exited ${statuses[0]}"
+  [ "${statuses[1]}" = 0 ] || fail "$label could not write $log"
+  if log_has_error "$log"; then
+    fail "$label printed an error despite exit 0; read $log"
+  fi
+}
+
+sync_checked() {
+  label="$1"
+  workspace="$2"
+  mkdir -p "$STATE/logs"
+  log="$STATE/logs/$label.log"
+  set +e
+  (cd "$workspace" && gr sync) 2>&1 | tee "$log"
+  statuses=("${PIPESTATUS[@]}")
+  set -e
+  [ "${statuses[0]}" = 0 ] || fail "$label exited ${statuses[0]}"
+  [ "${statuses[1]}" = 0 ] || fail "$label could not write $log"
+  if log_has_error "$log"; then
+    fail "$label printed an error despite exit 0; read $log"
+  fi
+}
+
+branch_of() {
+  git -C "$1" branch --show-current
+}
+
+section_count() {
+  grep -c '^## from' "$1"
+}
+
+chapter_1() {
+  need_command gr
+  need_command git
+  need_command python3
+  mkdir -p "$STATE"
+
+  if [ -f "$STATE/checkpoints/6.pass" ]; then
+    fail "this state already completed all six chapters; set LOOMWORKS_AGENT_LAB_DIR to a fresh path for another cold trial"
+  fi
+
+  printf 'gr: %s\n' "$(gr --version)"
+  printf 'state: %s\n' "$STATE"
+  if [ ! -f "$MOBILE/.gitgrip/state.json" ]; then
+    run_checked chapter-1-init gr init "$REMOTE" -p "$MOBILE" --no-interactive
+  else
+    printf 'reuse: %s\n' "$MOBILE"
+  fi
+
+  assert_clean_repos "$MOBILE" 6
+  [ "$(section_count "$MOBILE/CLAUDE.md")" = 4 ] || fail "mobile root must contain four composed sections"
+  [ "$(branch_of "$MOBILE/conventions")" = "conventions/mobile" ] || fail "mobile conventions override was not selected"
+  pass 1 "six clean repos, four root sections, conventions/mobile"
+}
+
+chapter_2() {
+  need_chapter 1
+  manifest="$MOBILE/.gitgrip/spaces/main/gripspace.yml"
+  [ -f "$manifest" ] || fail "active manifest missing at $manifest"
+
+  python3 - "$manifest" <<'PY'
+import pathlib, re, sys
+text = pathlib.Path(sys.argv[1]).read_text()
+for key in ("manifest", "gripspaces", "repos"):
+    count = len(re.findall(rf"(?m)^{key}:\s*$", text))
+    if count != 1:
+        raise SystemExit(f"FAIL: expected one top-level {key}: block, found {count}")
+required = (
+    "dest: CLAUDE.md",
+    "rev: platform/main",
+    "revision: android/main",
+    "revision: ios/main",
+    "revision: conventions/mobile",
+)
+for needle in required:
+    if needle not in text:
+        raise SystemExit(f"FAIL: active manifest is missing {needle!r}")
+print("manifest: writes CLAUDE.md, extends platform/main, owns android/ios/mobile conventions")
+PY
+  pass 2 "active manifest has one writes/extends/owns block and the mobile override"
+}
+
+chapter_3() {
+  need_chapter 2
+  if [ ! -d "$BASE_MANIFEST/.git" ]; then
+    git clone -q --single-branch -b base/main "$REMOTE" "$BASE_MANIFEST"
+  fi
+  if [ ! -f "$BASE/.gitgrip/state.json" ]; then
+    run_checked chapter-3-init gr init "$BASE_MANIFEST" -p "$BASE" --no-interactive
+  fi
+
+  assert_clean_repos "$BASE" 1
+  [ "$(branch_of "$BASE/config")" = "config/main" ] || fail "base child must be config/main"
+  [ "$(section_count "$BASE/CLAUDE.md")" = 1 ] || fail "base root must contain one composed section"
+  [ ! -e "$BASE/conventions" ] || fail "base workspace must not materialize conventions"
+  pass 3 "base stands alone with config/main, one root section, and no conventions repo"
+}
+
+chapter_4() {
+  need_chapter 3
+  child="$MOBILE/conventions/CLAUDE.md"
+  root_file="$MOBILE/CLAUDE.md"
+
+  if ! grep -Fqx -- "$MARKER" "$child"; then
+    printf '\n%s\n' "$MARKER" >> "$child"
+  fi
+  sync_checked chapter-4-sync "$MOBILE"
+
+  [ "$(grep -Fxc -- "$MARKER" "$root_file")" = 1 ] || fail "child marker must appear exactly once in the composed root"
+  [ "$(section_count "$root_file")" = 4 ] || fail "composition must retain four inherited sections"
+  pass 4 "child instruction reached the four-section root after gr sync"
+}
+
+chapter_5() {
+  need_chapter 4
+  if [ ! -d "$PLATFORM_MANIFEST/.git" ]; then
+    git clone -q --single-branch -b platform/main "$REMOTE" "$PLATFORM_MANIFEST"
+  fi
+  if [ ! -f "$PLATFORM/.gitgrip/state.json" ]; then
+    run_checked chapter-5-init gr init "$PLATFORM_MANIFEST" -p "$PLATFORM" --no-interactive
+  fi
+  assert_clean_repos "$PLATFORM" 4
+
+  [ "$(branch_of "$MOBILE/conventions")" = "conventions/mobile" ] || fail "mobile must select conventions/mobile"
+  grep -Fq 'MOBILE EDITION' "$MOBILE/conventions/CONVENTIONS.md" || fail "mobile conventions substance is not the mobile edition"
+  grep -Fq 'MOBILE edition' "$MOBILE/CLAUDE.md" || fail "mobile conventions did not reach the root composition"
+
+  [ "$(branch_of "$PLATFORM/conventions")" = "conventions/main" ] || fail "platform control must select conventions/main"
+  grep -Fq 'the baseline every team inherits' "$PLATFORM/conventions/CONVENTIONS.md" || fail "platform control is not the engineering baseline"
+  [ ! -e "$BASE/conventions" ] || fail "base control must have no conventions checkout"
+  pass 5 "mobile override, platform baseline, and base absence all discriminate"
+}
+
+chapter_6() {
+  need_chapter 5
+  manifest="$MOBILE/.gitgrip/spaces/main/gripspace.yml"
+
+  python3 - "$manifest" <<'PY'
+import pathlib, sys
+path = pathlib.Path(sys.argv[1])
+text = path.read_text()
+if "revision: notes/main" not in text:
+    compose_anchor = "        - repo: ios\n          src: CLAUDE.md\n"
+    if compose_anchor not in text:
+        raise SystemExit("FAIL: cannot find the ios compose part insertion point")
+    text = text.replace(
+        compose_anchor,
+        compose_anchor + "        - repo: notes\n          src: CLAUDE.md\n",
+        1,
+    )
+    text = text.rstrip() + "\n  notes:\n    url: https://github.com/synapt-dev/grip-tutorial.git\n    path: ./notes\n    revision: notes/main\n"
+    path.write_text(text)
+PY
+
+  sync_checked chapter-6-sync "$MOBILE"
+  [ "$(repo_count "$MOBILE")" = 7 ] || fail "extended workspace must contain seven child repos"
+  (cd "$MOBILE" && gr status --json) | python3 -c \
+    'import json,sys; rows=json.load(sys.stdin); dirty=[r["name"] for r in rows if not r["clean"]]; assert dirty==["conventions"], dirty' || \
+    fail "only the conventions repo changed in chapter 4 may remain dirty"
+  [ "$(branch_of "$MOBILE/notes")" = "notes/main" ] || fail "notes checkout must resolve to notes/main"
+  [ "$(grep -c '^### notes' "$MOBILE/CLAUDE.md")" = 1 ] || fail "notes instructions must appear exactly once in the root"
+  [ "$(grep -c '^### ' "$MOBILE/CLAUDE.md")" = 7 ] || fail "root must contain seven child-repository voices after extension"
+  pass 6 "notes/main materialized and composed; seven child repos and seven child voices"
+}
+
+run_one() {
+  case "$1" in
+    1) chapter_1 ;;
+    2) chapter_2 ;;
+    3) chapter_3 ;;
+    4) chapter_4 ;;
+    5) chapter_5 ;;
+    6) chapter_6 ;;
+    *) fail "usage: ./agent-codelab/run {1|2|3|4|5|6|all|selftest}" ;;
+  esac
+}
+
+selftest() {
+  mkdir -p "$STATE/logs"
+  good="$STATE/logs/selftest-good.log"
+  printf '✓ 7 synced, 0 failed\n' > "$good"
+  if log_has_error "$good"; then
+    fail "output classifier rejected its success control"
+  fi
+
+  for sample in 'Error: clone failed' 'Operation failed' '✗ manifest: error' '⚠ 7 synced, 1 failed'; do
+    bad="$STATE/logs/selftest-bad.log"
+    printf '%s\n' "$sample" > "$bad"
+    if ! log_has_error "$bad"; then
+      fail "output classifier missed: $sample"
+    fi
+  done
+  printf 'PASS selftest: exit-0 error output is refused and the success control is accepted\n'
+}
+
+case "${1:-}" in
+  all)
+    for chapter in 1 2 3 4 5 6; do
+      run_one "$chapter"
+    done
+    printf 'PASS all: six chapters completed in %s\n' "$STATE"
+    ;;
+  selftest)
+    selftest
+    ;;
+  1|2|3|4|5|6)
+    run_one "$1"
+    ;;
+  *)
+    fail "usage: ./agent-codelab/run {1|2|3|4|5|6|all|selftest}"
+    ;;
+esac
