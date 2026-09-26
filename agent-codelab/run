@@ -11,6 +11,14 @@ PLATFORM_MANIFEST="$STATE/platform-manifest"
 PLATFORM="$STATE/platform"
 MARKER="- Agent codelab marker: prefer table-driven tests."
 
+# THE CHAPTER LIST, IN ONE PLACE. It was hardcoded in three -- fail()'s retirement
+# bound, the `all` loop, and run_one's case arms -- so a seventh chapter could be
+# added in two of them and silently miss the third (a retirement that stops at 6
+# would leave 7.pass behind after a failed chapter 7). The case arms stay explicit
+# on purpose: they bind a number to a function, and that binding is the one thing
+# a list cannot express. Everything else reads from here.
+CHAPTERS="1 2 3 4 5 6"
+
 pass() {
   chapter="$1"
   shift
@@ -20,6 +28,36 @@ pass() {
 }
 
 fail() {
+  # AN ASSERTION FAILURE: this chapter ran and its own fruit is broken. A
+  # checkpoint records "this chapter passed AT SOME POINT", not "its fruit holds
+  # now", so a failure RETIRES this chapter's marker and every downstream one --
+  # otherwise a later chapter accepts a prerequisite whose fruit was violated.
+  #
+  # Measured before this (2026-09-26, found by a fresh-agent trial): run 1 on a
+  # fresh state (PASS, writes 1.pass); dirty one child repo; run 1 again (FAIL,
+  # correct); then `run 2` -> PASS at exit 0 on a workspace where chapter 1's
+  # fruit was currently violated.
+  #
+  # USE refuse() FOR PRECONDITIONS. A refusal is not evidence about any fruit,
+  # and retiring markers on one destroys records of chapters that never ran
+  # (Apollo's r2 on v1: chapter_1's completed-state guard is a precondition, so
+  # retiring there wiped all six markers of an already-complete state).
+  if [ -n "${RUN_CHAPTER:-}" ]; then
+    rm -f "$STATE/checkpoints/$RUN_CHAPTER.pass"
+    for later in $CHAPTERS; do
+      [ "$later" -gt "$RUN_CHAPTER" ] && rm -f "$STATE/checkpoints/$later.pass"
+    done
+  fi
+  printf 'FAIL: %s\n' "$*" >&2
+  exit 1
+}
+
+refuse() {
+  # A PRECONDITION, not an assertion: the state is not one this chapter may run
+  # against (already complete, missing tool, unknown argument), or a prerequisite
+  # has not passed. Nothing is retired, because nothing about any fruit has been
+  # measured -- and, in the already-complete case, retiring would delete the
+  # record of six chapters that passed.
   printf 'FAIL: %s\n' "$*" >&2
   exit 1
 }
@@ -29,13 +67,13 @@ log_has_error() {
 }
 
 need_command() {
-  command -v "$1" >/dev/null 2>&1 || fail "required command not found: $1"
+  command -v "$1" >/dev/null 2>&1 || refuse "required command not found: $1"
 }
 
 need_chapter() {
   previous="$1"
   [ -f "$STATE/checkpoints/$previous.pass" ] || \
-    fail "chapter $previous has not passed; run ./agent-codelab/run $previous first"
+    refuse "chapter $previous has not passed; run ./agent-codelab/run $previous first"
 }
 
 repo_count() {
@@ -99,7 +137,7 @@ chapter_1() {
   mkdir -p "$STATE"
 
   if [ -f "$STATE/checkpoints/6.pass" ]; then
-    fail "this state already completed all six chapters; set LOOMWORKS_AGENT_LAB_DIR to a fresh path for another cold trial"
+    refuse "this state already completed all six chapters; set LOOMWORKS_AGENT_LAB_DIR to a fresh path for another cold trial"
   fi
 
   printf 'gr: %s\n' "$(gr --version)"
@@ -227,6 +265,9 @@ PY
 }
 
 run_one() {
+  # The chapter in flight, so fail() can retire what this chapter's failure
+  # invalidates. Set here because every chapter runs through run_one.
+  RUN_CHAPTER="$1"
   case "$1" in
     1) chapter_1 ;;
     2) chapter_2 ;;
@@ -234,7 +275,7 @@ run_one() {
     4) chapter_4 ;;
     5) chapter_5 ;;
     6) chapter_6 ;;
-    *) fail "usage: ./agent-codelab/run {1|2|3|4|5|6|all|selftest}" ;;
+    *) refuse "usage: ./agent-codelab/run {1|2|3|4|5|6|all|selftest}" ;;
   esac
 }
 
@@ -258,7 +299,7 @@ selftest() {
 
 case "${1:-}" in
   all)
-    for chapter in 1 2 3 4 5 6; do
+    for chapter in $CHAPTERS; do
       run_one "$chapter"
     done
     printf 'PASS all: six chapters completed in %s\n' "$STATE"
