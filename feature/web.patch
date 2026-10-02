@@ -1,0 +1,39 @@
+diff --git a/demo_web/app.py b/demo_web/app.py
+index 0f9a4d3..47cea25 100644
+--- a/demo_web/app.py
++++ b/demo_web/app.py
+@@ -2,7 +2,7 @@ import json
+ from http.server import BaseHTTPRequestHandler, HTTPServer
+ from urllib.parse import parse_qs, urlsplit
+ 
+-from demo_core.pricing import total_cents
++from demo_core.pricing import quote_cents, total_cents
+ 
+ 
+ def handle(target: str):
+@@ -14,6 +14,12 @@ def handle(target: str):
+             return 200, {"qty": qty, "cents": total_cents(qty)}
+         except ValueError:
+             return 400, {"error": "qty must be a non-negative integer"}
++    if parts.path == "/quote":
++        try:
++            qty = int(parse_qs(parts.query).get("qty", [""])[0])
++            return 200, {"qty": qty, "cents": quote_cents(qty)}
++        except ValueError:
++            return 400, {"error": "qty must be a non-negative integer"}
+     return 404, {"error": "not found"}
+ 
+ 
+diff --git a/tests/test_app.py b/tests/test_app.py
+index 4417b3e..7ebfb78 100644
+--- a/tests/test_app.py
++++ b/tests/test_app.py
+@@ -11,3 +11,8 @@ def test_bad_quantity_is_a_400():
+ 
+ def test_unknown_path_is_a_404():
+     assert handle("/nope")[0] == 404
++
++
++def test_quote_applies_the_bulk_discount():
++    assert handle("/quote?qty=10") == (200, {"qty": 10, "cents": 2250})
++    assert handle("/quote?qty=9") == (200, {"qty": 9, "cents": 2250})
