@@ -1,0 +1,3 @@
+# demo-core is installed first, by its own hint, into the shared venv; web must not look for it on an index
+install = {venv} -m pip install --no-deps {lane}
+package = demo_web

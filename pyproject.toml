@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "demo-web"
+version = "0.1.0"
+description = "A tiny HTTP service over demo-core for the gr2 demo workspace"
+requires-python = ">=3.9"
+dependencies = ["demo-core"]
+
+[tool.setuptools]
+packages = ["demo_web"]
