@@ -1,0 +1,22 @@
+schema_version = 1
+workspace_name = "gr2-demo"
+
+[[members]]
+name = "demo-core"
+path = "demo-core"
+upstream = "origin/demo-core/main"
+ref = "demo-core/main"
+pin = "4a7b80198db4b1f8333fc90cd3432ff5392ca891"
+mode = "full"
+[members.remotes]
+origin = "https://github.com/synapt-dev/grip-tutorial.git"
+
+[[members]]
+name = "demo-web"
+path = "demo-web"
+upstream = "origin/demo-web/main"
+ref = "demo-web/main"
+pin = "db32045e060827a5c3291d1397b99f8561de1c16"
+mode = "full"
+[members.remotes]
+origin = "https://github.com/synapt-dev/grip-tutorial.git"

@@ -1,2 +1,10 @@
 .agent-codelab/
 
+# gr2 store allow-list (written by store init; an adopted root keeps its own)
+/*
+!/.gitignore
+!/grip.toml
+!/demo-core
+!/demo-web
+!/feature/
+!/feature/*
