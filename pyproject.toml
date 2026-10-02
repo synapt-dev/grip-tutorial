@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "demo-core"
+version = "0.1.0"
+description = "A tiny pricing library for the gr2 demo workspace"
+requires-python = ">=3.9"
+
+[tool.setuptools]
+packages = ["demo_core"]

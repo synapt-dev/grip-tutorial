@@ -1,0 +1,2 @@
+install = {venv} -m pip install {lane} pytest
+package = demo_core
