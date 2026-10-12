@@ -1,0 +1,4 @@
+# demo-core (and demo-web for the worker) are installed first, by their own hints, into the shared venv;
+# this member must not look for them on an index
+install = {venv} -m pip install --no-deps {lane}
+package = demo_api
