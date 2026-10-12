@@ -1,0 +1,2 @@
+install = {venv} -m pip install --no-deps {lane}
+package = demo_docs

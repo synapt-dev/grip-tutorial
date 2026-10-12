@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "demo-docs"
+version = "0.1.0"
+description = "The demo shop's documentation pages for the gr2 demo workspace"
+requires-python = ">=3.9"
+
+[tool.setuptools]
+packages = ["demo_docs"]
