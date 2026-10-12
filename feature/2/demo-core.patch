@@ -1,0 +1,33 @@
+diff --git a/demo_core/tax.py b/demo_core/tax.py
+new file mode 100644
+index 0000000..b7bae0b
+--- /dev/null
++++ b/demo_core/tax.py
+@@ -0,0 +1,8 @@
++TAX_PERCENT = 8
++
++
++def with_tax_cents(cents: int) -> int:
++    """`cents` plus TAX_PERCENT sales tax, rounded half up to the cent."""
++    if cents < 0:
++        raise ValueError("cents must be >= 0")
++    return (cents * (100 + TAX_PERCENT) + 50) // 100
+diff --git a/tests/test_tax.py b/tests/test_tax.py
+new file mode 100644
+index 0000000..6fac5bd
+--- /dev/null
++++ b/tests/test_tax.py
+@@ -0,0 +1,13 @@
++import pytest
++
++from demo_core.tax import with_tax_cents
++
++
++def test_eight_percent_tax():
++    assert with_tax_cents(1000) == 1080
++    assert with_tax_cents(250) == 270
++
++
++def test_negative_cents_are_refused():
++    with pytest.raises(ValueError):
++        with_tax_cents(-1)
