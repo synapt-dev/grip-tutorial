@@ -1,0 +1,31 @@
+diff --git a/demo_api/api.py b/demo_api/api.py
+index 106fc8d..48178fa 100644
+--- a/demo_api/api.py
++++ b/demo_api/api.py
+@@ -1,9 +1,11 @@
+ from demo_core.pricing import total_cents
++from demo_core.tax import with_tax_cents
+ 
+ 
+ def price(request: dict) -> dict:
+-    """{'qty': 4} -> {'qty': 4, 'cents': 1000}; a missing or bad qty is {'error': ...}."""
++    """{'qty': 4} -> {'qty': 4, 'cents': 1000, 'with_tax': 1080}; a missing or bad qty is {'error': ...}."""
+     qty = request.get("qty")
+     if not isinstance(qty, int) or isinstance(qty, bool) or qty < 0:
+         return {"error": "qty must be a non-negative integer"}
+-    return {"qty": qty, "cents": total_cents(qty)}
++    cents = total_cents(qty)
++    return {"qty": qty, "cents": cents, "with_tax": with_tax_cents(cents)}
+diff --git a/tests/test_api.py b/tests/test_api.py
+index 40b101d..0b817c3 100644
+--- a/tests/test_api.py
++++ b/tests/test_api.py
+@@ -2,7 +2,7 @@ from demo_api.api import price
+ 
+ 
+ def test_price():
+-    assert price({"qty": 4}) == {"qty": 4, "cents": 1000}
++    assert price({"qty": 4}) == {"qty": 4, "cents": 1000, "with_tax": 1080}
+ 
+ 
+ def test_a_bad_quantity_is_an_error():

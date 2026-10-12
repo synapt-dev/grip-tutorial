@@ -1,0 +1,44 @@
+diff --git a/demo_core/pricing.py b/demo_core/pricing.py
+index 0b09c77..12c4866 100644
+--- a/demo_core/pricing.py
++++ b/demo_core/pricing.py
+@@ -6,3 +6,15 @@ def total_cents(quantity: int) -> int:
+     if quantity < 0:
+         raise ValueError("quantity must be >= 0")
+     return quantity * UNIT_CENTS
++
++
++BULK_AT = 10
++BULK_PERCENT = 10
++
++
++def quote_cents(quantity: int) -> int:
++    """Price with the bulk discount: BULK_PERCENT off from BULK_AT units up."""
++    cents = total_cents(quantity)
++    if quantity >= BULK_AT:
++        cents = cents * (100 - BULK_PERCENT) // 100
++    return cents
+diff --git a/tests/test_pricing.py b/tests/test_pricing.py
+index 9141694..a14e195 100644
+--- a/tests/test_pricing.py
++++ b/tests/test_pricing.py
+@@ -1,6 +1,6 @@
+ import pytest
+ 
+-from demo_core.pricing import total_cents
++from demo_core.pricing import quote_cents, total_cents
+ 
+ 
+ def test_flat_price():
+@@ -10,3 +10,11 @@ def test_flat_price():
+ def test_negative_quantity_is_refused():
+     with pytest.raises(ValueError):
+         total_cents(-1)
++
++
++def test_no_discount_below_ten():
++    assert quote_cents(9) == total_cents(9)
++
++
++def test_ten_percent_off_from_ten_up():
++    assert quote_cents(10) == 2250

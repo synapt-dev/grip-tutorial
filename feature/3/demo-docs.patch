@@ -1,0 +1,40 @@
+diff --git a/docs/receipts.md b/docs/receipts.md
+new file mode 100644
+index 0000000..8b47ebe
+--- /dev/null
++++ b/docs/receipts.md
+@@ -0,0 +1,7 @@
++# Receipts
++
++The worker prints one receipt line per order, in this format:
++
++    qty 4: $10.00
++
++The quantity, then the total in dollars and cents.
+diff --git a/pyproject.toml b/pyproject.toml
+index 2d58c32..d66b1c4 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -7,6 +7,7 @@ name = "demo-docs"
+ version = "0.1.0"
+ description = "The demo shop's documentation pages for the gr2 demo workspace"
+ requires-python = ">=3.9"
++dependencies = ["demo-web"]
+ 
+ [tool.setuptools]
+ packages = ["demo_docs"]
+diff --git a/tests/test_receipts_doc.py b/tests/test_receipts_doc.py
+new file mode 100644
+index 0000000..a1bbbbd
+--- /dev/null
++++ b/tests/test_receipts_doc.py
+@@ -0,0 +1,9 @@
++from pathlib import Path
++
++from demo_web.receipt import line
++
++PAGE = Path(__file__).resolve().parents[1] / "docs" / "receipts.md"
++
++
++def test_the_documented_example_is_what_the_formatter_prints():
++    assert "    " + line(4, 1000) + "\n" in PAGE.read_text()
